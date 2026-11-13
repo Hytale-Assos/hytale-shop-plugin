@@ -179,6 +179,32 @@ class EconomyServiceTest {
     }
 
     @Test
+    void failedLoadRefusesWritesSoTheFileIsNotOverwritten() throws Exception {
+        Path file = tempDir.resolve("accounts.json");
+        Files.writeString(file, "{ not json");
+        EconomyService economy = new EconomyService(new AccountStorage(file), 100);
+
+        assertThrows(IOException.class, economy::load);
+        assertThrows(IOException.class, () -> economy.deposit(alice, 10));
+
+        assertEquals("{ not json", Files.readString(file));
+        assertEquals(100, economy.getBalance(alice));
+    }
+
+    @Test
+    void successfulReloadAfterAFailedLoadAllowsWritesAgain() throws Exception {
+        Path file = tempDir.resolve("accounts.json");
+        Files.writeString(file, "{ not json");
+        EconomyService economy = new EconomyService(new AccountStorage(file), 100);
+        assertThrows(IOException.class, economy::load);
+
+        Files.delete(file);
+        economy.load();
+
+        assertEquals(110, economy.deposit(alice, 10));
+    }
+
+    @Test
     void topIsSortedByBalanceThenNameAndLimited() throws Exception {
         EconomyService economy = service();
         UUID carol = UUID.randomUUID();
