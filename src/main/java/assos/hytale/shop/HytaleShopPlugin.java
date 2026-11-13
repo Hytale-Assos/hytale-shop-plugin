@@ -1,5 +1,6 @@
 package assos.hytale.shop;
 
+import assos.hytale.shop.commands.EcoCommand;
 import assos.hytale.shop.commands.HcoinCommand;
 import assos.hytale.shop.commands.HcoinTopCommand;
 import assos.hytale.shop.commands.PayCommand;
@@ -51,6 +52,7 @@ public final class HytaleShopPlugin extends JavaPlugin {
         getCommandRegistry().registerCommand(new PayCommand(actions, requirePermissions));
         getCommandRegistry().registerCommand(
                 new HcoinTopCommand(actions, settings.getTopListSize(), requirePermissions));
+        getCommandRegistry().registerCommand(new EcoCommand(actions));
     }
 
     @Override
