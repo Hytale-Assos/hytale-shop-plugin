@@ -1,0 +1,74 @@
+$C = "../../Common.ui";
+
+Group {
+  LayoutMode: Left;
+  Anchor: (Height: 66, Bottom: 6);
+  Background: #000000(0.15);
+  Padding: (Full: 6);
+
+  // ItemSlot renders the item icon with its quality background
+  Group #IconBorder {
+    Anchor: (Width: 54, Height: 54, Right: 10);
+    Background: #1a2530;
+    Padding: 2;
+
+    ItemSlot #Icon {
+      Anchor: (Full: 0);
+      ShowQualityBackground: true;
+    }
+  }
+
+  Group #Info {
+    LayoutMode: Top;
+    FlexWeight: 1;
+
+    Label #Name {
+      Anchor: (Height: 22);
+      Style: (
+        FontSize: 16,
+        TextColor: #ffffff,
+        RenderBold: true,
+        VerticalAlignment: Center,
+      );
+    }
+
+    Label #Prices {
+      Anchor: (Height: 18);
+      Style: (
+        FontSize: 13,
+        TextColor: #96a9be,
+        VerticalAlignment: Center,
+      );
+    }
+
+    Label #Owned {
+      Anchor: (Height: 14);
+      Style: (
+        FontSize: 12,
+        TextColor: #7a8a9a,
+        VerticalAlignment: Center,
+      );
+    }
+  }
+
+  Group #Actions {
+    LayoutMode: Left;
+    Anchor: (Width: 300);
+    Padding: (Top: 11);
+
+    $C.@SmallSecondaryTextButton #BuyButton {
+      @Text = "Buy";
+      Anchor: (Width: 90, Height: $C.@SmallButtonHeight, Right: 6);
+    }
+
+    $C.@SmallSecondaryTextButton #SellButton {
+      @Text = "Sell";
+      Anchor: (Width: 90, Height: $C.@SmallButtonHeight, Right: 6);
+    }
+
+    $C.@SmallSecondaryTextButton #SellAllButton {
+      @Text = "Sell all";
+      Anchor: (Width: 100, Height: $C.@SmallButtonHeight);
+    }
+  }
+}
