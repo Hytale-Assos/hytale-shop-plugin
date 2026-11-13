@@ -32,11 +32,12 @@ class PricingAndCategoryTest {
 
     @Test
     void buyPriceDoublesPerQualityStep() {
-        assertEquals(3, AutoPricing.buyPrice(ShopCategory.ROCKS, 0));
-        assertEquals(3, AutoPricing.buyPrice(ShopCategory.ROCKS, 1));
-        assertEquals(6, AutoPricing.buyPrice(ShopCategory.ROCKS, 2));
-        assertEquals(48, AutoPricing.buyPrice(ShopCategory.ROCKS, 5));
-        assertEquals(48, AutoPricing.buyPrice(ShopCategory.ROCKS, 10));
+        assertEquals(15, AutoPricing.buyPrice(ShopCategory.ROCKS, 0));
+        assertEquals(15, AutoPricing.buyPrice(ShopCategory.ROCKS, 1));
+        assertEquals(30, AutoPricing.buyPrice(ShopCategory.ROCKS, 2));
+        assertEquals(240, AutoPricing.buyPrice(ShopCategory.ROCKS, 5));
+        assertEquals(240, AutoPricing.buyPrice(ShopCategory.ROCKS, 10));
+        assertEquals(125, AutoPricing.buyPrice(ShopCategory.FURNITURE, 1));
     }
 
     @Test
