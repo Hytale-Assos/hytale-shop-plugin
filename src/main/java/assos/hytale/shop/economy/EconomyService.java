@@ -67,6 +67,21 @@ public final class EconomyService {
         return true;
     }
 
+    /**
+     * Removes up to {@code amount}, never going below zero.
+     *
+     * @return the amount actually removed
+     */
+    public synchronized long take(@Nonnull UUID playerId, long amount) throws IOException {
+        requirePositive(amount);
+        Map<UUID, Account> snapshot = snapshot();
+        Account account = account(playerId);
+        long removed = Math.min(amount, account.getBalance());
+        account.setBalance(account.getBalance() - removed);
+        persistOrRollback(snapshot);
+        return removed;
+    }
+
     public synchronized void setBalance(@Nonnull UUID playerId, long amount) throws IOException {
         if (amount < 0) {
             throw new IllegalArgumentException("Balance cannot be negative");

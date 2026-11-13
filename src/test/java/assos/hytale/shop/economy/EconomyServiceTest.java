@@ -65,6 +65,17 @@ class EconomyServiceTest {
     }
 
     @Test
+    void nonPositiveAmountsAreRejected() {
+        EconomyService economy = service();
+
+        assertThrows(IllegalArgumentException.class, () -> economy.deposit(alice, 0));
+        assertThrows(IllegalArgumentException.class, () -> economy.withdraw(alice, -5));
+        assertThrows(IllegalArgumentException.class, () -> economy.take(alice, 0));
+        assertThrows(IllegalArgumentException.class, () -> economy.transfer(alice, bob, 0));
+        assertThrows(IllegalArgumentException.class, () -> economy.setBalance(alice, -1));
+    }
+
+    @Test
     void withdrawSucceedsUpToTheExactBalance() throws Exception {
         EconomyService economy = service();
 
@@ -79,6 +90,14 @@ class EconomyServiceTest {
         assertFalse(economy.withdraw(alice, 101));
         assertEquals(100, economy.getBalance(alice));
         assertFalse(economy.hasAccount(alice));
+    }
+
+    @Test
+    void takeNeverGoesBelowZero() throws Exception {
+        EconomyService economy = service();
+
+        assertEquals(100, economy.take(alice, 500));
+        assertEquals(0, economy.getBalance(alice));
     }
 
     @Test
