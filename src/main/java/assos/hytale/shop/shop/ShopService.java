@@ -75,6 +75,38 @@ public final class ShopService {
         return TradeResult.success(entry.itemId(), quantity, total, economy.getBalance(playerId));
     }
 
+    @Nonnull
+    public TradeResult sell(@Nonnull UUID playerId, @Nonnull PlayerInventory inventory, @Nonnull String itemId,
+            int quantity) throws IOException {
+        Optional<ShopEntry> found = catalog.find(itemId);
+        if (found.isEmpty()) {
+            return TradeResult.failure(TradeStatus.NOT_IN_SHOP, itemId, quantity);
+        }
+        ShopEntry entry = found.get();
+        if (!entry.canSell()) {
+            return TradeResult.failure(TradeStatus.NOT_BOUGHT_BY_SHOP, entry.itemId(), quantity);
+        }
+        TradeStatus quantityStatus = checkQuantity(quantity);
+        if (quantityStatus != null) {
+            return TradeResult.failure(quantityStatus, entry.itemId(), quantity);
+        }
+
+        long total = Math.multiplyExact(entry.sellPrice(), (long) quantity);
+        if (inventory.count(entry.itemId()) < quantity || !inventory.remove(entry.itemId(), quantity)) {
+            return TradeResult.failure(TradeStatus.NOT_ENOUGH_ITEMS, entry.itemId(), quantity, total);
+        }
+        try {
+            economy.deposit(playerId, total);
+        } catch (IOException | RuntimeException exception) {
+            if (!inventory.add(entry.itemId(), quantity)) {
+                LOGGER.log(Level.SEVERE, "Could not give back " + quantity + " " + entry.itemId() + " to "
+                        + playerId + " after a failed sale");
+            }
+            throw exception;
+        }
+        return TradeResult.success(entry.itemId(), quantity, total, economy.getBalance(playerId));
+    }
+
     private TradeStatus checkQuantity(int quantity) {
         if (quantity < 1) {
             return TradeStatus.INVALID_QUANTITY;

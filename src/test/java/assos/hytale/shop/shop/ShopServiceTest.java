@@ -142,4 +142,68 @@ class ShopServiceTest {
         assertTrue(shop.buy(player, inventory, DIRT, 1).succeeded());
         assertEquals(98, economy.getBalance(player));
     }
+
+    @Test
+    void sellTakesItemsAndPaysHcoins() throws Exception {
+        FakeInventory inventory = new FakeInventory(100).with(SELL_ONLY, 5);
+
+        TradeResult result = shop.sell(player, inventory, SELL_ONLY, 3);
+
+        assertTrue(result.succeeded());
+        assertEquals(21, result.total());
+        assertEquals(121, economy.getBalance(player));
+        assertEquals(2, inventory.count(SELL_ONLY));
+    }
+
+    @Test
+    void sellWithoutEnoughItemsChangesNothing() throws Exception {
+        FakeInventory inventory = new FakeInventory(100).with(STONE, 2);
+
+        TradeResult result = shop.sell(player, inventory, STONE, 3);
+
+        assertEquals(TradeStatus.NOT_ENOUGH_ITEMS, result.status());
+        assertEquals(100, economy.getBalance(player));
+        assertEquals(2, inventory.count(STONE));
+    }
+
+    @Test
+    void sellOfABuyOnlyItemFails() throws Exception {
+        FakeInventory inventory = new FakeInventory(100).with(BUY_ONLY, 2);
+
+        TradeResult result = shop.sell(player, inventory, BUY_ONLY, 1);
+
+        assertEquals(TradeStatus.NOT_BOUGHT_BY_SHOP, result.status());
+        assertEquals(2, inventory.count(BUY_ONLY));
+    }
+
+    @Test
+    void sellOfAnItemOutsideTheShopFails() throws Exception {
+        FakeInventory inventory = new FakeInventory(100).with("Unknown_Item", 2);
+
+        assertEquals(TradeStatus.NOT_IN_SHOP, shop.sell(player, inventory, "Unknown_Item", 1).status());
+    }
+
+    @Test
+    void sellRejectsInvalidQuantities() throws Exception {
+        FakeInventory inventory = new FakeInventory(1000).with(STONE, 100);
+
+        assertEquals(TradeStatus.INVALID_QUANTITY, shop.sell(player, inventory, STONE, 0).status());
+        assertEquals(TradeStatus.QUANTITY_TOO_LARGE, shop.sell(player, inventory, STONE, 65).status());
+        assertEquals(100, inventory.count(STONE));
+    }
+
+    @Test
+    void sellGivesTheItemsBackWhenPayingFails() throws Exception {
+        Path broken = tempDir.resolve("broken.json");
+        Files.createDirectories(broken);
+        Files.writeString(broken.resolve("blocker"), "x");
+        EconomyService brokenEconomy = new EconomyService(new AccountStorage(broken), 100);
+        ShopService brokenShop = new ShopService(shop.getCatalog(), brokenEconomy, 64);
+        FakeInventory inventory = new FakeInventory(100).with(STONE, 4);
+
+        assertThrows(IOException.class, () -> brokenShop.sell(player, inventory, STONE, 4));
+
+        assertEquals(4, inventory.count(STONE));
+        assertEquals(100, brokenEconomy.getBalance(player));
+    }
 }
