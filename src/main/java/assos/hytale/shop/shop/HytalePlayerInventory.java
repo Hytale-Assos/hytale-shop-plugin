@@ -11,7 +11,9 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Hotbar, storage and backpack of a player. Must be used on the world thread of that player.
@@ -43,6 +45,20 @@ public final class HytalePlayerInventory implements PlayerInventory {
             }
         });
         return total[0];
+    }
+
+    /**
+     * Quantity per item id in one pass over the inventory, for screens that show many items at once.
+     */
+    @Nonnull
+    public Map<String, Integer> countAll() {
+        Map<String, Integer> counts = new HashMap<>();
+        container.forEach((slot, stack) -> {
+            if (!ItemStack.isEmpty(stack)) {
+                counts.merge(stack.getItemId(), stack.getQuantity(), Integer::sum);
+            }
+        });
+        return counts;
     }
 
     @Override
