@@ -105,4 +105,22 @@ class ShopCatalogTest {
         assertThrows(IOException.class, () -> new ShopCatalog(file).load());
     }
 
+    @Test
+    void failedLoadKeepsTheItemsAndRefusesEditsUntilAReloadSucceeds() throws Exception {
+        Path file = tempDir.resolve("shop.json");
+        ShopCatalog catalog = new ShopCatalog(file);
+        catalog.load();
+        Files.writeString(file, "{ broken");
+
+        assertThrows(IOException.class, catalog::load);
+        assertEquals(ShopCatalog.DEFAULT_ENTRIES, catalog.list());
+        assertThrows(IOException.class, () -> catalog.put(new ShopEntry("X", 1, 1)));
+        assertThrows(IOException.class, () -> catalog.remove("Soil_Dirt"));
+        assertEquals("{ broken", Files.readString(file));
+        assertEquals(ShopCatalog.DEFAULT_ENTRIES, catalog.list());
+
+        Files.writeString(file, "{ \"version\": 1, \"items\": [] }");
+        catalog.load();
+        assertTrue(catalog.put(new ShopEntry("X", 1, 1)));
+    }
 }

@@ -44,12 +44,27 @@ public final class ShopCatalog {
 
     private final Path file;
     private final Map<String, ShopEntry> entries = new LinkedHashMap<>();
+    private boolean writable = true;
 
     public ShopCatalog(@Nonnull Path file) {
         this.file = file;
     }
 
+    /**
+     * On failure the current items are kept and edits are refused until a load succeeds, so a broken file is
+     * never overwritten.
+     */
     public synchronized void load() throws IOException {
+        try {
+            loadFromDisk();
+            writable = true;
+        } catch (IOException | RuntimeException exception) {
+            writable = false;
+            throw exception;
+        }
+    }
+
+    private void loadFromDisk() throws IOException {
         if (!Files.exists(file)) {
             entries.clear();
             DEFAULT_ENTRIES.forEach(entry -> entries.put(entry.itemId(), entry));
@@ -129,6 +144,11 @@ public final class ShopCatalog {
     }
 
     private void persistOrRollback(Map<String, ShopEntry> snapshot) throws IOException {
+        if (!writable) {
+            entries.clear();
+            entries.putAll(snapshot);
+            throw new IOException("shop.json was not loaded; fix it and run /shopadmin reload");
+        }
         try {
             JsonFiles.writeAtomically(file, GSON, toStored());
         } catch (IOException | RuntimeException exception) {
