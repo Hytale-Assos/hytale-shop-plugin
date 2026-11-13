@@ -9,6 +9,7 @@ import assos.hytale.shop.commands.ShopCommand;
 import assos.hytale.shop.config.ShopConfig;
 import assos.hytale.shop.economy.AccountStorage;
 import assos.hytale.shop.economy.EconomyService;
+import assos.hytale.shop.shop.GameBlocks;
 import assos.hytale.shop.shop.ShopActions;
 import assos.hytale.shop.shop.ShopCatalog;
 import assos.hytale.shop.shop.ShopService;
@@ -67,11 +68,19 @@ public final class HytaleShopPlugin extends JavaPlugin {
             LOGGER.at(Level.SEVERE).withCause(exception)
                     .log("Failed to load Hcoin accounts; starting with no account");
         }
+        catalog.setCategorizer(GameBlocks::categoryOf);
+        if (settings.isIncludeAllBlocks()) {
+            try {
+                catalog.setAutoEntries(GameBlocks.autoEntries(settings.getSellPricePercent()));
+            } catch (RuntimeException exception) {
+                LOGGER.at(Level.SEVERE).withCause(exception).log("Failed to list the game blocks for the shop");
+            }
+        }
         try {
             catalog.load();
         } catch (IOException exception) {
             LOGGER.at(Level.SEVERE).withCause(exception)
-                    .log("Failed to load the shop; it stays empty until /shopadmin reload succeeds");
+                    .log("Failed to load shop.json; custom prices are ignored until /shopadmin reload succeeds");
         }
         LOGGER.at(Level.INFO).log("Shop ready with %d items", catalog.list().size());
     }
