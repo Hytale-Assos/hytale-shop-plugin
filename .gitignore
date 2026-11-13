@@ -10,3 +10,10 @@ run/
 .project
 .settings/
 .vscode
+# Dev server plugin data (run/mods/HytaleAssos_HytaleShop -> src/main/resources)
+src/main/resources/shop_config.json
+src/main/resources/shop_config.json.bak
+src/main/resources/accounts.json
+src/main/resources/accounts.json.bak
+src/main/resources/shop.json
+src/main/resources/shop.json.bak

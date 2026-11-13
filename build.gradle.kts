@@ -55,6 +55,10 @@ tasks.test {
     useJUnitPlatform()
 }
 
+tasks.processResources {
+    exclude("shop_config.json", "shop_config.json.bak", "accounts.json", "accounts.json.bak", "shop.json", "shop.json.bak")
+}
+
 tasks.named<Jar>("jar") {
     archiveBaseName.set(project.property("mod_name").toString())
     archiveVersion.set(project.property("version").toString())
