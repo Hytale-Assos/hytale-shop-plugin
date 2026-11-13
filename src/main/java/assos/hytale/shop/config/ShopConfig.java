@@ -38,7 +38,7 @@ public final class ShopConfig {
             .build();
 
     private String currencyName = "Hcoin";
-    private int startingBalance = 100;
+    private int startingBalance = 0;
     private int maxTransactionQuantity = 1000;
     private int topListSize = 10;
     private boolean includeAllBlocks = true;
