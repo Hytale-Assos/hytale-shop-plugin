@@ -1,5 +1,6 @@
 package assos.hytale.shop;
 
+import assos.hytale.shop.commands.HcoinCommand;
 import assos.hytale.shop.config.ShopConfig;
 import assos.hytale.shop.economy.AccountStorage;
 import assos.hytale.shop.economy.EconomyService;
@@ -43,6 +44,8 @@ public final class HytaleShopPlugin extends JavaPlugin {
         ShopService shopService = new ShopService(catalog, economy, settings.getMaxTransactionQuantity());
         ShopActions actions = new ShopActions(shopService, economy, new ShopMessages(settings.getCurrencyName()));
 
+        boolean requirePermissions = settings.isRequirePermissions();
+        getCommandRegistry().registerCommand(new HcoinCommand(actions, requirePermissions));
     }
 
     @Override
