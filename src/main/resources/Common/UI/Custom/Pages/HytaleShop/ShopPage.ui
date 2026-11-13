@@ -1,0 +1,80 @@
+$C = "../../Common.ui";
+
+$C.@PageOverlay {}
+
+$C.@DecoratedContainer {
+  Anchor: (Width: 860, Height: 640);
+
+  #Title {
+    Label #ShopTitle {
+      Style: (
+        ...$C.@TitleStyle,
+        HorizontalAlignment: Center,
+      );
+      Padding: (Horizontal: 19);
+      Text: "Shop";
+    }
+  }
+
+  #Content {
+    LayoutMode: Top;
+    Padding: (Horizontal: 10);
+
+    // Balance on the left, shared quantity input on the right
+    Group #Header {
+      LayoutMode: Left;
+      Anchor: (Height: 40, Bottom: 6);
+
+      Label #Balance {
+        FlexWeight: 1;
+        Style: (
+          FontSize: 18,
+          TextColor: #E8A93B,
+          RenderBold: true,
+          VerticalAlignment: Center,
+        );
+        Text: "";
+      }
+
+      Label #QuantityLabel {
+        Anchor: (Width: 110);
+        Padding: (Right: 10);
+        Style: (
+          FontSize: 14,
+          TextColor: #96a9be,
+          HorizontalAlignment: End,
+          VerticalAlignment: Center,
+          RenderUppercase: true,
+          RenderBold: true,
+        );
+        Text: "Quantity";
+      }
+
+      $C.@TextField #QuantityInput {
+        Anchor: (Width: 90, Height: 38);
+      }
+    }
+
+    // Result of the last action, set by the server
+    Label #Status {
+      Anchor: (Height: 24, Bottom: 4);
+      Style: (
+        FontSize: 14,
+        TextColor: #96a9be,
+        HorizontalAlignment: Center,
+        VerticalAlignment: Center,
+      );
+      Text: "";
+    }
+
+    // One Pages/HytaleShop/ShopItemRow.ui per item, appended by the server
+    Group #ItemList {
+      FlexWeight: 1;
+      LayoutMode: TopScrolling;
+      ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      Padding: (Right: 8);
+    }
+  }
+}
+
+$C.@BackButton {}
