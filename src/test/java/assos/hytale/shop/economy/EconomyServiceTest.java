@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import assos.hytale.shop.economy.EconomyService.TopEntry;
 import assos.hytale.shop.economy.EconomyService.TransferStatus;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,6 +47,18 @@ class EconomyServiceTest {
     void negativeStartingBalanceIsRejected() {
         assertThrows(IllegalArgumentException.class,
                 () -> new EconomyService(new AccountStorage(tempDir.resolve("a.json")), -1));
+    }
+
+    @Test
+    void touchOpensTheAccountAndRecordsTheName() throws Exception {
+        EconomyService economy = service();
+
+        economy.touch(alice, "Alice");
+        economy.touch(alice, "AliceRenamed");
+
+        assertTrue(economy.hasAccount(alice));
+        assertEquals(100, economy.getBalance(alice));
+        assertEquals("AliceRenamed", economy.top(10).get(0).name());
     }
 
     @Test
@@ -136,6 +150,22 @@ class EconomyServiceTest {
     }
 
     @Test
+    void balancesSurviveAReload() throws Exception {
+        EconomyService writer = service();
+        writer.touch(alice, "Alice");
+        writer.deposit(alice, 25);
+        writer.transfer(alice, bob, 5);
+
+        EconomyService reader = service();
+        reader.load();
+
+        assertEquals(120, reader.getBalance(alice));
+        assertEquals(105, reader.getBalance(bob));
+        assertEquals("Alice", reader.top(10).stream().filter(entry -> entry.playerId().equals(alice))
+                .findFirst().orElseThrow().name());
+    }
+
+    @Test
     void failedSaveRollsBackTheMutation() throws Exception {
         EconomyService economy = brokenService();
 
@@ -146,5 +176,30 @@ class EconomyServiceTest {
         assertThrows(IOException.class, () -> economy.transfer(alice, bob, 10));
         assertEquals(100, economy.getBalance(alice));
         assertEquals(100, economy.getBalance(bob));
+    }
+
+    @Test
+    void topIsSortedByBalanceThenNameAndLimited() throws Exception {
+        EconomyService economy = service();
+        UUID carol = UUID.randomUUID();
+        economy.touch(alice, "Alice");
+        economy.touch(bob, "Bob");
+        economy.touch(carol, "Carol");
+        economy.deposit(bob, 50);
+
+        List<TopEntry> top = economy.top(2);
+
+        assertEquals(2, top.size());
+        assertEquals("Bob", top.get(0).name());
+        assertEquals(150, top.get(0).balance());
+        assertEquals("Alice", top.get(1).name());
+    }
+
+    @Test
+    void topWithZeroLimitIsEmpty() throws Exception {
+        EconomyService economy = service();
+        economy.touch(alice, "Alice");
+
+        assertTrue(economy.top(0).isEmpty());
     }
 }

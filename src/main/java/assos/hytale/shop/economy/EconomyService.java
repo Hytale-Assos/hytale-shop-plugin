@@ -1,8 +1,12 @@
 package assos.hytale.shop.economy;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -41,6 +45,23 @@ public final class EconomyService {
 
     public synchronized boolean hasAccount(@Nonnull UUID playerId) {
         return accounts.containsKey(playerId);
+    }
+
+    /**
+     * Opens the account with the starting balance if needed and records the latest known username.
+     */
+    public synchronized void touch(@Nonnull UUID playerId, @Nullable String name) throws IOException {
+        Account existing = accounts.get(playerId);
+        if (existing != null && (name == null || name.equals(existing.getName()))) {
+            return;
+        }
+        Map<UUID, Account> snapshot = snapshot();
+        if (existing == null) {
+            accounts.put(playerId, new Account(name, startingBalance));
+        } else {
+            existing.setName(name);
+        }
+        persistOrRollback(snapshot);
     }
 
     public synchronized long deposit(@Nonnull UUID playerId, long amount) throws IOException {
@@ -111,6 +132,16 @@ public final class EconomyService {
         return TransferStatus.SUCCESS;
     }
 
+    @Nonnull
+    public synchronized List<TopEntry> top(int limit) {
+        List<TopEntry> entries = new ArrayList<>();
+        accounts.forEach((playerId, account) -> entries.add(
+                new TopEntry(playerId, account.getName(), account.getBalance())));
+        entries.sort(Comparator.comparingLong(TopEntry::balance).reversed()
+                .thenComparing(entry -> entry.name() == null ? "" : entry.name()));
+        return entries.size() > limit ? List.copyOf(entries.subList(0, Math.max(0, limit))) : entries;
+    }
+
     private Account account(UUID playerId) {
         return accounts.computeIfAbsent(playerId, ignored -> new Account(null, startingBalance));
     }
@@ -151,4 +182,6 @@ public final class EconomyService {
         SAME_ACCOUNT
     }
 
+    public record TopEntry(@Nonnull UUID playerId, @Nullable String name, long balance) {
+    }
 }
