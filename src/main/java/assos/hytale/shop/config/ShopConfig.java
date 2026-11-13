@@ -23,6 +23,14 @@ public final class ShopConfig {
                     (config, value, info) -> config.topListSize = value,
                     (config, info) -> config.topListSize)
             .add()
+            .append(new KeyedCodec<>("IncludeAllBlocks", Codec.BOOLEAN),
+                    (config, value, info) -> config.includeAllBlocks = value,
+                    (config, info) -> config.includeAllBlocks)
+            .add()
+            .append(new KeyedCodec<>("SellPricePercent", Codec.INTEGER),
+                    (config, value, info) -> config.sellPricePercent = value,
+                    (config, info) -> config.sellPricePercent)
+            .add()
             .append(new KeyedCodec<>("RequirePermissions", Codec.BOOLEAN),
                     (config, value, info) -> config.requirePermissions = value,
                     (config, info) -> config.requirePermissions)
@@ -33,6 +41,8 @@ public final class ShopConfig {
     private int startingBalance = 100;
     private int maxTransactionQuantity = 1000;
     private int topListSize = 10;
+    private boolean includeAllBlocks = true;
+    private int sellPricePercent = 25;
     private boolean requirePermissions;
 
     private ShopConfig() {
@@ -52,6 +62,14 @@ public final class ShopConfig {
 
     public int getTopListSize() {
         return Math.max(1, topListSize);
+    }
+
+    public boolean isIncludeAllBlocks() {
+        return includeAllBlocks;
+    }
+
+    public int getSellPricePercent() {
+        return Math.min(Math.max(sellPricePercent, 0), 100);
     }
 
     public boolean isRequirePermissions() {
