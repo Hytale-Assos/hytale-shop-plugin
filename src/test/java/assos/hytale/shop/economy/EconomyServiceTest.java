@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import assos.hytale.shop.economy.EconomyService.TransferStatus;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -87,5 +88,44 @@ class EconomyServiceTest {
         economy.setBalance(alice, 0);
 
         assertEquals(0, economy.getBalance(alice));
+    }
+
+    @Test
+    void transferMovesTheAmountBetweenAccounts() throws Exception {
+        EconomyService economy = service();
+
+        assertEquals(TransferStatus.SUCCESS, economy.transfer(alice, bob, 40));
+        assertEquals(60, economy.getBalance(alice));
+        assertEquals(140, economy.getBalance(bob));
+    }
+
+    @Test
+    void transferWithInsufficientFundsChangesNothing() throws Exception {
+        EconomyService economy = service();
+
+        assertEquals(TransferStatus.INSUFFICIENT_FUNDS, economy.transfer(alice, bob, 101));
+        assertEquals(100, economy.getBalance(alice));
+        assertEquals(100, economy.getBalance(bob));
+    }
+
+    @Test
+    void transferToYourselfIsRefused() throws Exception {
+        EconomyService economy = service();
+
+        assertEquals(TransferStatus.SAME_ACCOUNT, economy.transfer(alice, alice, 10));
+        assertEquals(100, economy.getBalance(alice));
+    }
+
+    @Test
+    void failedSaveRollsBackTheMutation() throws Exception {
+        EconomyService economy = brokenService();
+
+        assertThrows(IOException.class, () -> economy.deposit(alice, 50));
+        assertEquals(100, economy.getBalance(alice));
+        assertFalse(economy.hasAccount(alice));
+
+        assertThrows(IOException.class, () -> economy.transfer(alice, bob, 10));
+        assertEquals(100, economy.getBalance(alice));
+        assertEquals(100, economy.getBalance(bob));
     }
 }

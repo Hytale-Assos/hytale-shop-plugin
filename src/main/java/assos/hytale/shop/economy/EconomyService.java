@@ -76,6 +76,26 @@ public final class EconomyService {
         persistOrRollback(snapshot);
     }
 
+    @Nonnull
+    public synchronized TransferStatus transfer(@Nonnull UUID from, @Nonnull UUID to, long amount)
+            throws IOException {
+        requirePositive(amount);
+        if (from.equals(to)) {
+            return TransferStatus.SAME_ACCOUNT;
+        }
+        if (getBalance(from) < amount) {
+            return TransferStatus.INSUFFICIENT_FUNDS;
+        }
+        long receiverBalance = add(getBalance(to), amount);
+
+        Map<UUID, Account> snapshot = snapshot();
+        Account sender = account(from);
+        sender.setBalance(sender.getBalance() - amount);
+        account(to).setBalance(receiverBalance);
+        persistOrRollback(snapshot);
+        return TransferStatus.SUCCESS;
+    }
+
     private Account account(UUID playerId) {
         return accounts.computeIfAbsent(playerId, ignored -> new Account(null, startingBalance));
     }
@@ -108,6 +128,12 @@ public final class EconomyService {
         } catch (ArithmeticException exception) {
             throw new IllegalArgumentException("Amount is too large");
         }
+    }
+
+    public enum TransferStatus {
+        SUCCESS,
+        INSUFFICIENT_FUNDS,
+        SAME_ACCOUNT
     }
 
 }
