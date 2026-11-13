@@ -1,161 +1,182 @@
-# Hytale Plugin Template
+# Hytale Shop
 
-A ready-to-use starting point for creating Hytale server plugins with Java, _or Kotlin_. If you've
-been using the Asset Editor and want to start writing server-side logic — custom commands, event
-handling, gameplay systems — this is the simplest place to begin.
+Shop administrateur pour serveur Hytale, développé par l'association étudiante
+**HytaleAssos**.
 
-This template uses the [Hytale Gradle Plugin](https://github.com/AzureDoom/Hytale-Gradle-Plugin),
-a Gradle plugin maintained by AzureDoom for Hytale mod/plugin development. It handles the repetitive
-project setup work for you, including manifest generation, validation, local server runs, IDE source
-setup, and optional hosted Hytale Javadoc injection.
+Les joueurs achètent et vendent des blocs contre des **Hcoins**, la monnaie du
+serveur, depuis une interface en jeu ou depuis le chat. Le shop est tenu par les
+admins : stock et fonds illimités. Il propose automatiquement tous les blocs du
+jeu (environ 2 600), avec un prix calculé que les admins peuvent changer.
 
-## How to start
+## Fonctionnalités
 
-1. Copy the template by downloading it or using the **Use this template** button.
-2. [Configure or install the Java SDK](https://hytalemodding.dev/en/docs/guides/plugin/setting-up-env)
-   to use Java 25. JetBrains Runtime is recommended for the best hot-reload/debugging experience.
-3. Open the project in your favorite IDE. We recommend
-   [IntelliJ IDEA](https://www.jetbrains.com/idea/download).
-4. Update the project values in `gradle.properties`:
-    - `rootProject.name` in `settings.gradle.kts`
-    - `group`
-    - `manifest_group`
-    - `mod_name`
-    - `mod_id`
-    - `main_class`
-    - `mod_author`
-    - `mod_description`
-    - `mod_url`
-5. Optionally run `./gradlew` if your IDE does not automatically sync the project.
-6. Prepare the Hytale development environment:
+- Monnaie **Hcoin** : solde par joueur, solde de départ configurable (0 par
+  défaut, les joueurs gagnent leurs Hcoins en vendant), virements entre
+  joueurs, classement des plus riches.
+- Tous les blocs du jeu ajoutés automatiquement : roches, terres, bois,
+  plantes, métal, tissu, déco, minerais et meubles.
+- Interface `/shop` paginée (25 articles par page) avec onglets par catégorie et
+  recherche ; une ligne par article avec icône, nom, prix d'achat, prix de
+  revente, quantité possédée, et boutons **Buy**, **Sell**, **Sell all**.
+- Commandes chat équivalentes : `/shop buy`, `/shop sell`, `/shop sellall`,
+  `/shop list [page]`, `/shop search <texte>`.
+- Commandes admin : `/eco give|take|set` pour les soldes, `/shopadmin
+  set|remove|reset|reload` pour les prix et le catalogue.
+- Transactions sûres : l'argent et les objets bougent dans un ordre qui ne crée
+  jamais de valeur, avec remboursement si l'inventaire est plein.
+- Persistance JSON (`accounts.json`, `shop.json`) avec écriture atomique,
+  sauvegarde `.bak` et rollback mémoire si l'écriture échoue.
 
-   ```bash
-   ./gradlew setupHytaleDev
-   ```
+## Documentation
 
-7. Run the local development server:
+- [Commandes](docs/commandes.md) : toutes les commandes joueur et admin, avec
+  leurs arguments, permissions et exemples.
+- [Interface](docs/interface.md) : utilisation de la fenêtre du shop.
 
-   ```bash
-   ./gradlew runServer
-   ```
+## Configuration
 
-> On Windows, use `./gradlew.bat` or `gradlew.bat` instead of `./gradlew`. The Gradle wrapper is
-> included so you do not need to install Gradle separately; only Java is required.
+`shop_config.json`, dans le dossier de données du plugin, est créé au premier
+démarrage :
 
-When the server starts, the output may prompt you to authorize your Hytale server. After that, you
-can begin developing your plugin while the server handles local development runs.
+| Clé | Défaut | Rôle |
+| --- | --- | --- |
+| `CurrencyName` | `Hcoin` | Nom de la monnaie affiché partout. |
+| `StartingBalance` | `0` | Solde d'un joueur qui n'a jamais eu de compte. |
+| `MaxTransactionQuantity` | `1000` | Quantité maximale par achat ou vente. |
+| `TopListSize` | `10` | Nombre de lignes de `/hcointop`. |
+| `IncludeAllBlocks` | `true` | Ajoute automatiquement tous les blocs du jeu. Si `false`, seuls les articles de `shop.json` sont proposés. |
+| `SellPricePercent` | `25` | Prix de revente automatique, en % du prix d'achat (minimum 1 Hcoin, `0` = revente désactivée). |
+| `RequirePermissions` | `false` | Si `true`, les commandes joueur exigent leur permission. |
 
-From here, the [HytaleModding guides](https://hytalemodding.dev/en/docs/guides/plugin/build-and-test)
-cover more details.
+Redémarrer le serveur après une modification.
 
-## Hytale Gradle Plugin
+## Prix automatiques
 
-This template is built around AzureDoom's `com.azuredoom.hytale-tools` Gradle plugin.
+Un bloc est ajouté automatiquement s'il est plaçable, appartient à une
+catégorie `Blocks.*` (sauf fluides et portails) ou `Furniture.*`, et n'est pas
+un objet de développement (qualités Developer, Technical, Template, Tool,
+Debug).
 
-The plugin is configured in `build.gradle.kts`:
+Prix d'achat = prix de base de la catégorie, doublé à chaque rang de qualité
+au-dessus de Common (Uncommon x2, Rare x4, Epic x8, Legendary x16) :
 
-```kotlin
-plugins {
-    idea
-    java
-    id("com.azuredoom.hytale-tools") version "1.+"
+| Catégorie | Prix de base |
+| --- | --- |
+| Soils | 10 |
+| Rocks, Plants | 15 |
+| Wood | 20 |
+| Cloth | 25 |
+| Deco | 40 |
+| Metal | 75 |
+| Ores | 100 |
+| Furniture | 125 |
+
+Prix de revente = `SellPricePercent` % du prix d'achat, au moins 1.
+
+Un admin change n'importe quel prix avec `/shopadmin set`, retire un bloc avec
+`/shopadmin remove` et annule ces changements avec `/shopadmin reset`.
+
+## Permissions
+
+Les commandes joueur sont ouvertes à tous tant que `RequirePermissions` vaut
+`false`. Les commandes admin exigent **toujours** `hytale.shop.admin`.
+
+| Permission | Commandes |
+| --- | --- |
+| `hytale.shop.shop` | `/shop` et ses sous-commandes |
+| `hytale.shop.balance` | `/hcoin` |
+| `hytale.shop.balance.others` | `/hcoin <joueur>` |
+| `hytale.shop.pay` | `/pay` |
+| `hytale.shop.top` | `/hcointop` |
+| `hytale.shop.admin` | `/eco`, `/shopadmin` |
+
+## Données
+
+Fichiers dans le dossier de données du plugin
+(`mods/HytaleAssos_HytaleShop/` sur le serveur) :
+
+- `accounts.json` : soldes par UUID de joueur, avec le dernier pseudo connu.
+- `shop.json` : uniquement les changements des admins. Les blocs automatiques
+  n'y sont pas écrits.
+
+```json
+{
+  "version": 2,
+  "items": [
+    { "itemId": "Rock_Stone", "buyPrice": 25, "sellPrice": 6 }
+  ],
+  "excluded": [ "Soil_Gravel" ]
 }
 ```
 
-The AzureDoom Maven repository is configured in `settings.gradle.kts`:
+- `items` : prix personnalisés. Ils remplacent le prix automatique d'un bloc,
+  ou ajoutent un objet qui n'est pas un bloc (lingot, nourriture...).
+- `excluded` : blocs automatiques retirés du shop.
 
-```kotlin
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        mavenCentral()
-        maven {
-            name = "AzureDoom Maven"
-            url = uri("https://maven.azuredoom.com/mods")
-        }
-    }
-}
-```
+- `buyPrice` : Hcoins payés par le joueur pour une unité. `0` = le shop ne le
+  vend pas.
+- `sellPrice` : Hcoins reçus par le joueur pour une unité. `0` = le shop ne le
+  rachète pas.
+- Les entrées invalides (id vide, prix négatif, deux prix à `0`) sont ignorées
+  au chargement, avec un avertissement dans les logs. Les articles dont l'id
+  n'existe pas dans le jeu sont masqués de l'interface et de `/shop list`.
 
-Most plugin-specific settings are controlled from `gradle.properties` and passed into the
-`hytaleTools` block in `build.gradle.kts`. This keeps common project metadata in one easy-to-edit
-place.
+Les articles sont affichés triés par id. `shop.json` peut être modifié à la
+main puis rechargé avec `/shopadmin reload`. Un fichier `version: 1` (ancien
+format) est lu tel quel : ses articles deviennent des prix personnalisés.
 
-For full plugin documentation, configuration options, tasks, and multi-project setup, visit the
-[Hytale Gradle Plugin repository](https://github.com/AzureDoom/Hytale-Gradle-Plugin).
+Si un fichier est illisible au démarrage, le plugin refuse toute écriture
+dessus pour ne pas l'écraser : les soldes ne peuvent plus changer (ou le
+catalogue ne peut plus être modifié) tant que le fichier n'est pas réparé. Pour
+le catalogue, `/shopadmin reload` suffit après réparation ; pour les comptes,
+il faut redémarrer.
 
-## Useful commands
+## Limites connues
 
-```bash
-# Sync/setup the local Hytale development environment
-./gradlew setupHytaleDev
+- `/pay`, `/eco` et `/hcoin <joueur>` ne visent que des joueurs connectés.
+- L'inventaire pris en compte est la barre rapide, le stockage et le sac à dos,
+  pas l'armure ni les emplacements utilitaires.
+- Un admin peut fixer un prix de revente supérieur au prix d'achat ;
+  `/shopadmin set` l'avertit car cela permet de générer des Hcoins à l'infini.
+- La recherche porte sur l'id de l'objet (`stone`, `oak plank`), pas sur son
+  nom traduit : le serveur ne connaît pas les traductions.
+- Les prix automatiques sont une base : les blocs rares d'une même catégorie
+  coûtent pareil tant qu'un admin ne les ajuste pas.
+- L'interface et les commandes n'ont pas de test automatisé : elles se
+  vérifient en jeu avec `./gradlew runServer`.
 
-# Run the local Hytale server
-./gradlew runServer
-
-# Run the server with debugging and hot swap enabled
-./gradlew runServer -Ddebug=true -Dhotswap=true
-
-# Check your JVM and hot swap setup
-./gradlew hytaleJvmDoctor
-
-# Build the plugin
-./gradlew build
-
-# Refresh dependencies if something fails to resolve
-./gradlew build --refresh-dependencies
-```
-
-## Project structure
-
-```text
-src/main/java/        Plugin source code
-src/main/resources/   Plugin resources, including manifest.json
-gradle.properties     Main template configuration
-build.gradle.kts      Gradle build and Hytale Gradle Plugin configuration
-settings.gradle.kts   Plugin repositories and project name
-```
-
-## Manifest configuration
-
-The generated `manifest.json` is driven by the values in `gradle.properties`, including:
-
-- `manifest_group`
-- `mod_id`
-- `version`
-- `mod_description`
-- `mod_author`
-- `mod_url`
-- `main_class`
-- `manifest_dependencies`
-- `manifest_opt_dependencies`
-- `manifestServerVersion`
-
-After changing these values, run:
+## Construction et tests
 
 ```bash
-./gradlew updatePluginManifest
+./gradlew build     # compile, teste et produit build/libs/Hytale Shop-<version>.jar
+./gradlew test      # tests unitaires seulement
+./gradlew runServer # serveur de développement local
 ```
 
-## Troubleshooting
+Les tests unitaires (`src/test/java`) couvrent `EconomyService`,
+`AccountStorage`, `ShopCatalog`, `ShopEntry`, `ShopService`, `ShopFilter`,
+`ShopCategory` et `AutoPricing`, avec un faux inventaire. Ils n'utilisent que des dossiers temporaires.
 
-- **Gradle sync fails in IntelliJ** — Check that Java 25 is installed and configured under
-  **File → Project Structure → SDKs**.
-- **The Hytale Gradle Plugin does not resolve** — Make sure `settings.gradle.kts` includes the
-  AzureDoom Maven repository at `https://maven.azuredoom.com/mods`.
-- **Build fails with missing dependencies** — Run `./gradlew build --refresh-dependencies` and make
-  sure you have internet access.
-- **Permission denied on `./gradlew`** — Run `chmod +x gradlew` on macOS/Linux.
-- **Hot reload or enhanced class redefinition does not work** — Use JetBrains Runtime and try
-  `./gradlew hytaleJvmDoctor` to verify your JVM setup.
+## Structure
 
-## Resources
+```
+src/main/java/assos/hytale/shop/
+  HytaleShopPlugin.java   point d'entrée, enregistrement des commandes
+  ShopMessages.java       textes et couleurs des messages
+  ShopPermissions.java    noeuds de permission
+  config/ShopConfig.java  configuration (shop_config.json)
+  economy/                comptes Hcoin et leur stockage
+  shop/                   catalogue, blocs du jeu, prix automatiques, filtres,
+                          règles d'achat/vente, accès à l'inventaire
+  commands/               commandes chat
+  ui/ShopPage.java        fenêtre du shop
+src/main/resources/Common/UI/Custom/Pages/HytaleShop/
+  ShopPage.ui             mise en page de la fenêtre
+  ShopItemRow.ui          ligne d'article
+```
 
-- [Hytale Gradle Plugin](https://github.com/AzureDoom/Hytale-Gradle-Plugin)
-- [Hytale Modding Guides](https://hytalemodding.dev)
-- [Hytale Modding Discord](https://discord.gg/hytalemodding)
+## Compatibilité
 
-## License
-
-Add your own license after copying the template. We recommend MIT, BSD, or Apache to keep the
-modding community open.
+- Java 25, serveur Hytale `>=0.7.2 <0.8.0` (compilé contre l'API 0.7.7).
+- Le plugin embarque un asset pack (`IncludesAssetPack: true`) pour ses fichiers
+  d'interface, et dépend de `Hytale:AssetModule`.
