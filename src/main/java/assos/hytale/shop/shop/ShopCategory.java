@@ -8,16 +8,16 @@ import javax.annotation.Nullable;
  * {@link #basePrice} is the automatic buy price of a common item of that category.
  */
 public enum ShopCategory {
-    ROCKS("Rocks", "Blocks.Rocks", 3),
-    SOILS("Soils", "Blocks.Soils", 2),
-    WOOD("Wood", "Blocks.Wood", 4),
-    PLANTS("Plants", "Blocks.Plants", 3),
-    METAL("Metal", "Blocks.Metal", 15),
-    CLOTH("Cloth", "Blocks.Cloth", 5),
-    DECO("Deco", "Blocks.Deco", 8),
-    ORES("Ores", "Blocks.Ores", 20),
-    FURNITURE("Furniture", "Furniture.", 25),
-    OTHER("Other", null, 10);
+    ROCKS("Rocks", "Blocks.Rocks", 15),
+    SOILS("Soils", "Blocks.Soils", 10),
+    WOOD("Wood", "Blocks.Wood", 20),
+    PLANTS("Plants", "Blocks.Plants", 15),
+    METAL("Metal", "Blocks.Metal", 75),
+    CLOTH("Cloth", "Blocks.Cloth", 25),
+    DECO("Deco", "Blocks.Deco", 40),
+    ORES("Ores", "Blocks.Ores", 100),
+    FURNITURE("Furniture", "Furniture.", 125),
+    OTHER("Other", null, 50);
 
     private final String label;
     private final String gameCategory;
