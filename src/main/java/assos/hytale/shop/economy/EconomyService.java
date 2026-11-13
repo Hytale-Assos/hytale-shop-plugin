@@ -19,6 +19,7 @@ public final class EconomyService {
     private final AccountStorage storage;
     private final long startingBalance;
     private final Map<UUID, Account> accounts = new HashMap<>();
+    private boolean writable = true;
 
     public EconomyService(@Nonnull AccountStorage storage, long startingBalance) {
         if (startingBalance < 0) {
@@ -28,10 +29,20 @@ public final class EconomyService {
         this.startingBalance = startingBalance;
     }
 
+    /**
+     * If loading fails every later mutation is refused, so a corrupt file is never overwritten by an empty one.
+     */
     public synchronized void load() throws IOException {
-        Map<UUID, Account> loaded = storage.load();
+        Map<UUID, Account> loaded;
+        try {
+            loaded = storage.load();
+        } catch (IOException | RuntimeException exception) {
+            writable = false;
+            throw exception;
+        }
         accounts.clear();
         accounts.putAll(loaded);
+        writable = true;
     }
 
     public long getStartingBalance() {
@@ -153,6 +164,11 @@ public final class EconomyService {
     }
 
     private void persistOrRollback(Map<UUID, Account> snapshot) throws IOException {
+        if (!writable) {
+            accounts.clear();
+            accounts.putAll(snapshot);
+            throw new IOException("Accounts were not loaded; refusing to overwrite the accounts file");
+        }
         try {
             storage.save(accounts);
         } catch (IOException | RuntimeException exception) {
