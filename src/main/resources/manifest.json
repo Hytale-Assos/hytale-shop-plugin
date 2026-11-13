@@ -2,7 +2,7 @@
     "Group": "HytaleAssos",
     "Name": "HytaleShop",
     "Version": "0.1.0",
-    "Description": "Shop plugin for Hytale.",
+    "Description": "Admin shop to buy and sell blocks with the Hcoin currency.",
     "Authors": [
         {
             "Name": "HytaleAssos"
@@ -10,9 +10,9 @@
     ],
     "Website": "https://github.com/Hytale-Assos/hytale-shop-plugin",
     "DisabledByDefault": false,
-    "IncludesAssetPack": false,
+    "IncludesAssetPack": true,
     "Dependencies": {
-        
+        "Hytale:AssetModule": "*"
     },
     "OptionalDependencies": {
         
