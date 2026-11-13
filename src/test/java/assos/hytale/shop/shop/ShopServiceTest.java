@@ -206,4 +206,43 @@ class ShopServiceTest {
         assertEquals(4, inventory.count(STONE));
         assertEquals(100, brokenEconomy.getBalance(player));
     }
+
+    @Test
+    void sellAllSellsEverythingCarried() throws Exception {
+        FakeInventory inventory = new FakeInventory(100).with(STONE, 12);
+
+        TradeResult result = shop.sellAll(player, inventory, STONE);
+
+        assertTrue(result.succeeded());
+        assertEquals(12, result.quantity());
+        assertEquals(112, economy.getBalance(player));
+        assertEquals(0, inventory.count(STONE));
+    }
+
+    @Test
+    void sellAllIsCappedAtTheMaxQuantity() throws Exception {
+        FakeInventory inventory = new FakeInventory(1000).with(STONE, 100);
+
+        TradeResult result = shop.sellAll(player, inventory, STONE);
+
+        assertTrue(result.succeeded());
+        assertEquals(64, result.quantity());
+        assertEquals(36, inventory.count(STONE));
+    }
+
+    @Test
+    void sellAllWithNothingToSellFails() throws Exception {
+        TradeResult result = shop.sellAll(player, new FakeInventory(100), STONE);
+
+        assertEquals(TradeStatus.NOT_ENOUGH_ITEMS, result.status());
+        assertEquals(100, economy.getBalance(player));
+    }
+
+    @Test
+    void sellAllReportsItemsTheShopDoesNotBuyOrSell() throws Exception {
+        FakeInventory inventory = new FakeInventory(100).with(BUY_ONLY, 3);
+
+        assertEquals(TradeStatus.NOT_BOUGHT_BY_SHOP, shop.sellAll(player, inventory, BUY_ONLY).status());
+        assertEquals(TradeStatus.NOT_IN_SHOP, shop.sellAll(player, inventory, "Unknown_Item").status());
+    }
 }

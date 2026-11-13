@@ -107,6 +107,27 @@ public final class ShopService {
         return TradeResult.success(entry.itemId(), quantity, total, economy.getBalance(playerId));
     }
 
+    /**
+     * Sells every unit of the item the player carries, capped at the max transaction quantity.
+     */
+    @Nonnull
+    public TradeResult sellAll(@Nonnull UUID playerId, @Nonnull PlayerInventory inventory, @Nonnull String itemId)
+            throws IOException {
+        Optional<ShopEntry> found = catalog.find(itemId);
+        if (found.isEmpty()) {
+            return TradeResult.failure(TradeStatus.NOT_IN_SHOP, itemId, 0);
+        }
+        ShopEntry entry = found.get();
+        if (!entry.canSell()) {
+            return TradeResult.failure(TradeStatus.NOT_BOUGHT_BY_SHOP, entry.itemId(), 0);
+        }
+        int owned = inventory.count(entry.itemId());
+        if (owned == 0) {
+            return TradeResult.failure(TradeStatus.NOT_ENOUGH_ITEMS, entry.itemId(), 0);
+        }
+        return sell(playerId, inventory, entry.itemId(), Math.min(owned, maxQuantity));
+    }
+
     private TradeStatus checkQuantity(int quantity) {
         if (quantity < 1) {
             return TradeStatus.INVALID_QUANTITY;
