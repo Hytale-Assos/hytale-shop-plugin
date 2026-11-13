@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 
 /**
- * Admin command: {@code /shopadmin set|remove|reload}. Always requires {@link ShopPermissions#ADMIN}.
+ * Admin command: {@code /shopadmin set|remove|reset|reload}. Always requires {@link ShopPermissions#ADMIN}.
  */
 public final class ShopAdminCommand extends AbstractCommandCollection {
 
@@ -32,6 +32,7 @@ public final class ShopAdminCommand extends AbstractCommandCollection {
         ShopCatalog catalog = actions.getShopService().getCatalog();
         addSubCommand(new SetCommand(catalog, actions.getMessages()));
         addSubCommand(new RemoveCommand(catalog));
+        addSubCommand(new ResetCommand(catalog));
         addSubCommand(new ReloadCommand(catalog));
     }
 
@@ -104,6 +105,36 @@ public final class ShopAdminCommand extends AbstractCommandCollection {
                     context.sendMessage(ShopMessages.success("Removed " + itemId + " from the shop."));
                 } else {
                     context.sendMessage(ShopMessages.error("'" + itemId + "' is not in the shop."));
+                }
+            } catch (IOException exception) {
+                LOGGER.at(Level.SEVERE).withCause(exception).log("Failed to save the shop");
+                context.sendMessage(ShopMessages.error("The shop could not be saved. Check the server logs."));
+            }
+            return CompletableFuture.completedFuture(null);
+        }
+    }
+
+    private static final class ResetCommand extends AbstractCommand {
+
+        private final ShopCatalog catalog;
+        private final RequiredArg<String> itemArg;
+
+        private ResetCommand(ShopCatalog catalog) {
+            super("reset", "Restore the automatic price of an item, or bring back a removed block");
+            requirePermission(ShopPermissions.ADMIN);
+            this.catalog = catalog;
+            this.itemArg = withRequiredArg("item", "Item id", ArgTypes.STRING);
+        }
+
+        @Nullable
+        @Override
+        protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+            String itemId = itemArg.get(context);
+            try {
+                if (catalog.reset(itemId)) {
+                    context.sendMessage(ShopMessages.success("Reset " + itemId + " to its automatic price."));
+                } else {
+                    context.sendMessage(ShopMessages.error("'" + itemId + "' has no custom price and was not removed."));
                 }
             } catch (IOException exception) {
                 LOGGER.at(Level.SEVERE).withCause(exception).log("Failed to save the shop");
